@@ -1,0 +1,30 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+
+# SSH Keys - NEVER commit private keys
+*.pem
+*-key
+ca-key
+jit-ca
+jit-ca.pub
+jit-new-key
+jit-new-key.pub
+jit-new-key-cert.pub
+
+# Logs
+*.log
+
+# Leftover from scp
+opt/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
