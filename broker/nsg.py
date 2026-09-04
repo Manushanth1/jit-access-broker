@@ -1,5 +1,6 @@
 ﻿from azure.identity import ManagedIdentityCredential
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.network.models import SecurityRule
 from datetime import datetime, timedelta, timezone
 import uuid
 
@@ -14,23 +15,25 @@ def open_rule(source_ip: str, duration_minutes: int):
     expiry    = datetime.now(timezone.utc) + timedelta(minutes=duration_minutes)
     rule_name = f"jit-{uuid.uuid4().hex[:8]}"
 
+    # Find a free priority in range 200-299
     nsg  = client.network_security_groups.get(RESOURCE_GROUP, NSG_NAME)
     used = {r.priority for r in nsg.security_rules if 200 <= r.priority <= 299}
     priority = next(p for p in range(200, 300) if p not in used)
 
+    rule = SecurityRule(
+        priority=priority,
+        protocol="Tcp",
+        direction="Inbound",
+        access="Allow",
+        source_address_prefix=source_ip,
+        source_port_range="*",
+        destination_address_prefix="*",
+        destination_port_range="22",
+        description=f"JIT expires {expiry.isoformat()}"
+    )
+
     client.security_rules.begin_create_or_update(
-        RESOURCE_GROUP, NSG_NAME, rule_name,
-        {
-            "priority": priority,
-            "protocol": "Tcp",
-            "direction": "Inbound",
-            "access": "Allow",
-            "source_address_prefix": source_ip,
-            "source_port_range": "*",
-            "destination_address_prefix": "*",
-            "destination_port_range": "22",
-            "description": f"JIT expires {expiry.isoformat()}"
-        }
+        RESOURCE_GROUP, NSG_NAME, rule_name, rule
     ).result()
 
     return rule_name, expiry.isoformat()
